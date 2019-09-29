@@ -63,6 +63,8 @@ def do_train(
         iteration = iteration + 1
         arguments["iteration"] = iteration
 
+        scheduler.step()
+
         images = images.to(device)
         targets = [target.to(device) for target in targets]
 
@@ -81,7 +83,6 @@ def do_train(
         with amp.scale_loss(losses, optimizer) as scaled_losses:
             scaled_losses.backward()
         optimizer.step()
-        scheduler.step()
 
         batch_time = time.time() - end
         end = time.time()

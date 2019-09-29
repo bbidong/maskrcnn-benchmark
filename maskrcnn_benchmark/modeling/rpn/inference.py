@@ -52,6 +52,7 @@ class RPNPostProcessor(torch.nn.Module):
 
     def add_gt_proposals(self, proposals, targets):
         """
+        功能：把每张img的proposals和targets的内容合起来,因为target的fields没有objectness,所以用torch.ones填充
         Arguments:
             proposals: list[BoxList]
             targets: list[BoxList]
@@ -59,7 +60,7 @@ class RPNPostProcessor(torch.nn.Module):
         # Get the device we're operating on
         device = proposals[0].bbox.device
 
-        gt_boxes = [target.copy_with_fields([]) for target in targets]
+        gt_boxes = [target.copy_with_fields([]) for target in targets]  # 复制targets,但把fields留空
 
         # later cat of bbox requires all fields to be present for all bbox
         # so we need to add a dummy for objectness that's missing
@@ -76,21 +77,23 @@ class RPNPostProcessor(torch.nn.Module):
     def forward_for_single_feature_map(self, anchors, objectness, box_regression):
         """
         Arguments:
-            anchors: list[BoxList]
-            objectness: tensor of size N, A, H, W
-            box_regression: tensor of size N, A * 4, H, W
+            anchors: list[BoxList], anchors size：(N, H*W*ratios,4) N为batch的个数, H W为当前特征层的size, 4为x1y1x2y2
+            objectness: tensor of size N, A, H, W , 处理成 (N, H*W*ratios)
+            box_regression: tensor of size N, A * 4, H, W , 处理成 (N, H*W*ratios,4)
+        功能： 根据objectness概率的高低选出前pre_nms_top_n个anchor, 通过这些anchor和box_regression（学习映射函数dx dy dw dh）
+        计算得到基于候选框的预测框xyxy,然后通过nms等条件进一步筛选得到最后的boxlist(把objectness分数存在extra_fields)
         """
         device = objectness.device
         N, A, H, W = objectness.shape
 
         # put in the same format as anchors
         objectness = permute_and_flatten(objectness, N, A, 1, H, W).view(N, -1)
-        objectness = objectness.sigmoid()
+        objectness = objectness.sigmoid()  # 归一化. 便于nms和thresh比较
 
         box_regression = permute_and_flatten(box_regression, N, A, 4, H, W)
 
         num_anchors = A * H * W
-
+        #在每个特征图上每张图片选取的anchor数
         pre_nms_top_n = min(self.pre_nms_top_n, num_anchors)
         objectness, topk_idx = objectness.topk(pre_nms_top_n, dim=1, sorted=True)
 
@@ -100,7 +103,7 @@ class RPNPostProcessor(torch.nn.Module):
         image_shapes = [box.size for box in anchors]
         concat_anchors = torch.cat([a.bbox for a in anchors], dim=0)
         concat_anchors = concat_anchors.reshape(N, -1, 4)[batch_idx, topk_idx]
-
+        # 得到预测的候选框, 通过anchor和box_regression（学习映射函数dx dy dw dh）计算得到基于候选框的预测框
         proposals = self.box_coder.decode(
             box_regression.view(-1, 4), concat_anchors.view(-1, 4)
         )
@@ -112,7 +115,7 @@ class RPNPostProcessor(torch.nn.Module):
             boxlist = BoxList(proposal, im_shape, mode="xyxy")
             boxlist.add_field("objectness", score)
             boxlist = boxlist.clip_to_image(remove_empty=False)
-            boxlist = remove_small_boxes(boxlist, self.min_size)
+            boxlist = remove_small_boxes(boxlist, self.min_size)    # 确保proposal的w & h > min_size
             boxlist = boxlist_nms(
                 boxlist,
                 self.nms_thresh,
@@ -120,10 +123,11 @@ class RPNPostProcessor(torch.nn.Module):
                 score_field="objectness",
             )
             result.append(boxlist)
-        return result
+        return result    # 元素为N (batch)
 
     def forward(self, anchors, objectness, box_regression, targets=None):
         """
+        功能：筛选预测框,最后和targets的内容拼起来
         Arguments:
             anchors: list[list[BoxList]]
             objectness: list[tensor]
@@ -131,27 +135,30 @@ class RPNPostProcessor(torch.nn.Module):
 
         Returns:
             boxlists (list[BoxList]): the post-processed anchors, after
-                applying box decoding and NMS
+            applying box decoding and NMS
         """
         sampled_boxes = []
         num_levels = len(objectness)
         anchors = list(zip(*anchors))
         for a, o, b in zip(anchors, objectness, box_regression):
             sampled_boxes.append(self.forward_for_single_feature_map(a, o, b))
-
-        boxlists = list(zip(*sampled_boxes))
-        boxlists = [cat_boxlist(boxlist) for boxlist in boxlists]
+        # sampled_boxes :(5,N)  5个特征层 N张img的预测侯选框
+        boxlists = list(zip(*sampled_boxes))   # boxlists： (N,5)
+        boxlists = [cat_boxlist(boxlist) for boxlist in boxlists]  # boxlists： (N, ) 把5个特征层的内容合到一个
 
         if num_levels > 1:
-            boxlists = self.select_over_all_levels(boxlists)
+            boxlists = self.select_over_all_levels(boxlists)   # boxlists中进一步筛选出fpn_post_nms_top_n个
 
         # append ground-truth bboxes to proposals
         if self.training and targets is not None:
-            boxlists = self.add_gt_proposals(boxlists, targets)
+            boxlists = self.add_gt_proposals(boxlists, targets)   # 把boxlists和targets的内容合起来,fields只保留objectness
 
         return boxlists
 
     def select_over_all_levels(self, boxlists):
+        """
+        功能：根据objectness的高低筛选出前post_nms_top_n个（N张img的总和是post_nms_top_n）
+        """
         num_images = len(boxlists)
         # different behavior during training and during testing:
         # during training, post_nms_top_n is over *all* the proposals combined, while
@@ -161,13 +168,13 @@ class RPNPostProcessor(torch.nn.Module):
         if self.training and self.fpn_post_nms_per_batch:
             objectness = torch.cat(
                 [boxlist.get_field("objectness") for boxlist in boxlists], dim=0
-            )
+            )       # batch的所有objectness合到一起
             box_sizes = [len(boxlist) for boxlist in boxlists]
             post_nms_top_n = min(self.fpn_post_nms_top_n, len(objectness))
             _, inds_sorted = torch.topk(objectness, post_nms_top_n, dim=0, sorted=True)
             inds_mask = torch.zeros_like(objectness, dtype=torch.uint8)
             inds_mask[inds_sorted] = 1
-            inds_mask = inds_mask.split(box_sizes)
+            inds_mask = inds_mask.split(box_sizes)  # inds_mask: （N, ）在所有objectness中排在top post_nms_top_n的为1,不是的为0
             for i in range(num_images):
                 boxlists[i] = boxlists[i][inds_mask[i]]
         else:

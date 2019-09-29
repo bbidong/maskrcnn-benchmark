@@ -40,7 +40,7 @@ class FPN(nn.Module):
             self.layer_blocks.append(layer_block)
         self.top_blocks = top_blocks
 
-    def forward(self, x):
+    def forward(self, x):  # x: 各个Resnet stage返回的feature maps
         """
         Arguments:
             x (list[Tensor]): feature maps for each feature level.
@@ -56,12 +56,12 @@ class FPN(nn.Module):
         ):
             if not inner_block:
                 continue
-            inner_top_down = F.interpolate(last_inner, scale_factor=2, mode="nearest")
-            inner_lateral = getattr(self, inner_block)(feature)
+            inner_top_down = F.interpolate(last_inner, scale_factor=2, mode="nearest")   # 上采样层
+            inner_lateral = getattr(self, inner_block)(feature)     # 横向连接层
             # TODO use size instead of scale to make it robust to different sizes
             # inner_top_down = F.upsample(last_inner, size=inner_lateral.shape[-2:],
             # mode='bilinear', align_corners=False)
-            last_inner = inner_lateral + inner_top_down
+            last_inner = inner_lateral + inner_top_down     # 相加
             results.insert(0, getattr(self, layer_block)(last_inner))
 
         if isinstance(self.top_blocks, LastLevelP6P7):

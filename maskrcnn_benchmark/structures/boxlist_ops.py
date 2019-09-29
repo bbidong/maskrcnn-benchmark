@@ -7,7 +7,7 @@ from maskrcnn_benchmark.layers import nms as _box_nms
 
 
 def boxlist_nms(boxlist, nms_thresh, max_proposals=-1, score_field="scores"):
-    """
+    """ 非极大值抑制
     Performs non-maximum suppression on a boxlist, with scores specified
     in a boxlist field via score_field.
 
@@ -51,7 +51,9 @@ def remove_small_boxes(boxlist, min_size):
 # implementation from https://github.com/kuangliu/torchcv/blob/master/torchcv/utils/box.py
 # with slight modifications
 def boxlist_iou(boxlist1, boxlist2):
-    """Compute the intersection over union of two set of boxes.
+    """
+    功能：对于N中的每一个box,都和M个box计算IOU, 所以Return的size为[N,M]
+    Compute the intersection over union of two set of boxes.
     The box order must be (xmin, ymin, xmax, ymax).
 
     Arguments:
@@ -72,11 +74,11 @@ def boxlist_iou(boxlist1, boxlist2):
     N = len(boxlist1)
     M = len(boxlist2)
 
-    area1 = boxlist1.area()
+    area1 = boxlist1.area()   # 返回bbox的面积
     area2 = boxlist2.area()
 
     box1, box2 = boxlist1.bbox, boxlist2.bbox
-
+    # 分别计算左上角左边中较大的坐标，右下角坐标中较小的，即两个边框重合的坐标
     lt = torch.max(box1[:, None, :2], box2[:, :2])  # [N,M,2]
     rb = torch.min(box1[:, None, 2:], box2[:, 2:])  # [N,M,2]
 
@@ -104,7 +106,7 @@ def cat_boxlist(bboxes):
     """
     Concatenates a list of BoxList (having the same image size) into a
     single BoxList
-
+    功能：把一张img的5个特征层的信息合成一个
     Arguments:
         bboxes (list[BoxList])
     """
@@ -119,9 +121,9 @@ def cat_boxlist(bboxes):
 
     fields = set(bboxes[0].fields())
     assert all(set(bbox.fields()) == fields for bbox in bboxes)
-
+    # 把5个特征层的bbox cat起来
     cat_boxes = BoxList(_cat([bbox.bbox for bbox in bboxes], dim=0), size, mode)
-
+    # 把objectness cat后加进去
     for field in fields:
         data = _cat([bbox.get_field(field) for bbox in bboxes], dim=0)
         cat_boxes.add_field(field, data)

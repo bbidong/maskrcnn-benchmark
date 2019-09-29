@@ -44,7 +44,7 @@ class Matcher(object):
         Args:
             match_quality_matrix (Tensor[float]): an MxN tensor, containing the
             pairwise quality between M ground-truth elements and N predicted elements.
-
+            M个gt和N个预测框的IOU
         Returns:
             matches (Tensor[int64]): an N tensor where N[i] is a matched gt in
             [0, M - 1] or a negative value indicating that prediction i could not
@@ -63,9 +63,9 @@ class Matcher(object):
 
         # match_quality_matrix is M (gt) x N (predicted)
         # Max over gt elements (dim 0) to find best gt candidate for each prediction
-        matched_vals, matches = match_quality_matrix.max(dim=0)
+        matched_vals, matches = match_quality_matrix.max(dim=0)  # 在gt这个维度里选出最大的IOU
         if self.allow_low_quality_matches:
-            all_matches = matches.clone()
+            all_matches = matches.clone()   # shape of all_matches=[N],取值x(0到M-1之间),表示这个预测框与第x个gt的IOU最大
 
         # Assign candidate matches with low quality to negative (unassigned) values
         below_low_threshold = matched_vals < self.low_threshold
@@ -74,7 +74,7 @@ class Matcher(object):
         )
         matches[below_low_threshold] = Matcher.BELOW_LOW_THRESHOLD
         matches[between_thresholds] = Matcher.BETWEEN_THRESHOLDS
-
+        # 到此, shape of matches=[N], 取值可以为-1(表示这个预测框与所有gt的最大IOU<low_threshold),-2(同理),以及x(0到M-1)（表示这个预测框与第x个gt的IOU最大且>high_threshold）
         if self.allow_low_quality_matches:
             self.set_low_quality_matches_(matches, all_matches, match_quality_matrix)
 
@@ -82,6 +82,10 @@ class Matcher(object):
 
     def set_low_quality_matches_(self, matches, all_matches, match_quality_matrix):
         """
+        功能：在本来的matches里,如果预测框与所有gt的最大IOU<high_threshold,就会被当成背景,
+        这个函数允许小于low_threshold的预测框与相应的基准边框gt相匹配. 明确的说,对于每一个gt,
+        找到IOU最大的预测框（可能多个）,如果这些预测框中有的被屏蔽了, 就把它们和IOU最大的gt匹配上,
+        尽管IOU<high_threshold.
         Produce additional matches for predictions that have only low-quality matches.
         Specifically, for each ground-truth find the set of predictions that have
         maximum overlap with it (including ties); for each prediction in that set, if
@@ -89,7 +93,7 @@ class Matcher(object):
         quality value.
         """
         # For each gt, find the prediction with which it has highest quality
-        highest_quality_foreach_gt, _ = match_quality_matrix.max(dim=1)
+        highest_quality_foreach_gt, _ = match_quality_matrix.max(dim=1)     # 在预测框这个维度里选个最大的
         # Find highest quality match available, even if it is low, including ties
         gt_pred_pairs_of_highest_quality = torch.nonzero(
             match_quality_matrix == highest_quality_foreach_gt[:, None]

@@ -87,12 +87,12 @@ class ResNet(nn.Module):
         # self.cfg = cfg.clone()
 
         # Translate string names to implementations
-        stem_module = _STEM_MODULES[cfg.MODEL.RESNETS.STEM_FUNC]
-        stage_specs = _STAGE_SPECS[cfg.MODEL.BACKBONE.CONV_BODY]
-        transformation_module = _TRANSFORMATION_MODULES[cfg.MODEL.RESNETS.TRANS_FUNC]
+        stem_module = _STEM_MODULES[cfg.MODEL.RESNETS.STEM_FUNC]    # 链接到stem类
+        stage_specs = _STAGE_SPECS[cfg.MODEL.BACKBONE.CONV_BODY]   # 每个stage的block个数和是否返回feature
+        transformation_module = _TRANSFORMATION_MODULES[cfg.MODEL.RESNETS.TRANS_FUNC]  # 链接到Bottleneck类
 
         # Construct the stem module
-        self.stem = stem_module(cfg)
+        self.stem = stem_module(cfg)    # 创建stem类
 
         # Constuct the specified ResNet stages
         num_groups = cfg.MODEL.RESNETS.NUM_GROUPS
@@ -104,9 +104,9 @@ class ResNet(nn.Module):
         self.return_features = {}
         for stage_spec in stage_specs:
             name = "layer" + str(stage_spec.index)
-            stage2_relative_factor = 2 ** (stage_spec.index - 1)
-            bottleneck_channels = stage2_bottleneck_channels * stage2_relative_factor
-            out_channels = stage2_out_channels * stage2_relative_factor
+            stage2_relative_factor = 2 ** (stage_spec.index - 1)  # 1, 2, 4 , 8
+            bottleneck_channels = stage2_bottleneck_channels * stage2_relative_factor  # 64, 128, 256, 512
+            out_channels = stage2_out_channels * stage2_relative_factor        # 256, 512, 1024, 2048
             stage_with_dcn = cfg.MODEL.RESNETS.STAGE_WITH_DCN[stage_spec.index -1]
             module = _make_stage(
                 transformation_module,
@@ -115,11 +115,12 @@ class ResNet(nn.Module):
                 out_channels,
                 stage_spec.block_count,
                 num_groups,
-                cfg.MODEL.RESNETS.STRIDE_IN_1X1,
+                cfg.MODEL.RESNETS.STRIDE_IN_1X1,   # True
                 first_stride=int(stage_spec.index > 1) + 1,
+                # 每个stage有多个block, 各个stage第一个block的stride: 1,2,2,2(其余block都为1), 这样经过stage 1图像w h大小不变
                 dcn_config={
-                    "stage_with_dcn": stage_with_dcn,
-                    "with_modulated_dcn": cfg.MODEL.RESNETS.WITH_MODULATED_DCN,
+                    "stage_with_dcn": stage_with_dcn,   # False
+                    "with_modulated_dcn": cfg.MODEL.RESNETS.WITH_MODULATED_DCN,     # False
                     "deformable_groups": cfg.MODEL.RESNETS.DEFORMABLE_GROUPS,
                 }
             )
@@ -443,7 +444,7 @@ _STAGE_SPECS = Registry({
     "R-50-C5": ResNet50StagesTo5,
     "R-101-C4": ResNet101StagesTo4,
     "R-101-C5": ResNet101StagesTo5,
-    "R-50-FPN": ResNet50FPNStagesTo5,
+    "R-50-FPN": ResNet50FPNStagesTo5,    # index: 1,2,3,4  block num: 3,4,6,3
     "R-50-FPN-RETINANET": ResNet50FPNStagesTo5,
     "R-101-FPN": ResNet101FPNStagesTo5,
     "R-101-FPN-RETINANET": ResNet101FPNStagesTo5,

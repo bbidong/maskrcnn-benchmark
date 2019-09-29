@@ -48,7 +48,7 @@ class PostProcessor(nn.Module):
             x (tuple[tensor, tensor]): x contains the class logits
                 and the box_regression from the model.
             boxes (list[BoxList]): bounding boxes that are used as
-                reference, one for each image
+                reference, one for ech image
 
         Returns:
             results (list[BoxList]): one BoxList for each image, containing

@@ -13,7 +13,7 @@ class BoxCoder(object):
     def __init__(self, weights, bbox_xform_clip=math.log(1000. / 16)):
         """
         Arguments:
-            weights (4-element tuple)
+            weights (4-element tuple)    表示的是x, y, w, h在运算中所占的权重
             bbox_xform_clip (float)
         """
         self.weights = weights
@@ -21,12 +21,13 @@ class BoxCoder(object):
 
     def encode(self, reference_boxes, proposals):
         """
+        功能：得到衡量尺度t_x,t_y,t_w,t_h
         Encode a set of proposals with respect to some
         reference boxes
 
         Arguments:
-            reference_boxes (Tensor): reference boxes
-            proposals (Tensor): boxes to be encoded
+            reference_boxes (Tensor): reference boxes   , 每个预测框对应的基准框
+            proposals (Tensor): boxes to be encoded     ,   预测框
         """
 
         TO_REMOVE = 1  # TODO remove
@@ -51,16 +52,17 @@ class BoxCoder(object):
 
     def decode(self, rel_codes, boxes):
         """
+        功能： 根据anchor和学习到的映射函数得到预测框
         From a set of original boxes and encoded relative box offsets,
         get the decoded boxes.
 
         Arguments:
-            rel_codes (Tensor): encoded boxes
-            boxes (Tensor): reference boxes.
+            rel_codes (Tensor): encoded boxes     box_regression
+            boxes (Tensor): reference boxes.      anchor
         """
 
         boxes = boxes.to(rel_codes.dtype)
-
+        # 计算两个数之间的真实距离，需要相减之后加１
         TO_REMOVE = 1  # TODO remove
         widths = boxes[:, 2] - boxes[:, 0] + TO_REMOVE
         heights = boxes[:, 3] - boxes[:, 1] + TO_REMOVE

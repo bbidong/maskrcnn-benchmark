@@ -117,19 +117,19 @@ class RPNModule(torch.nn.Module):
 
         self.cfg = cfg.clone()
 
-        anchor_generator = make_anchor_generator(cfg)
+        anchor_generator = make_anchor_generator(cfg)   # 创建AnchorGenerator类
 
-        rpn_head = registry.RPN_HEADS[cfg.MODEL.RPN.RPN_HEAD]
+        rpn_head = registry.RPN_HEADS[cfg.MODEL.RPN.RPN_HEAD]   # 链接到rpn_head类
         head = rpn_head(
             cfg, in_channels, anchor_generator.num_anchors_per_location()[0]
-        )
+        )                                                       # 创建rpn_head类
 
         rpn_box_coder = BoxCoder(weights=(1.0, 1.0, 1.0, 1.0))
 
-        box_selector_train = make_rpn_postprocessor(cfg, rpn_box_coder, is_train=True)
+        box_selector_train = make_rpn_postprocessor(cfg, rpn_box_coder, is_train=True)  # 创建RPNPostProcessor类
         box_selector_test = make_rpn_postprocessor(cfg, rpn_box_coder, is_train=False)
 
-        loss_evaluator = make_rpn_loss_evaluator(cfg, rpn_box_coder)
+        loss_evaluator = make_rpn_loss_evaluator(cfg, rpn_box_coder)   # 创建RPNLossComputation类
 
         self.anchor_generator = anchor_generator
         self.head = head
@@ -161,6 +161,9 @@ class RPNModule(torch.nn.Module):
             return self._forward_test(anchors, objectness, rpn_box_regression)
 
     def _forward_train(self, anchors, objectness, rpn_box_regression, targets):
+        """
+            返回 the predicted boxes from the RPN 和 loss, 这两者的过程是不同步的
+        """
         if self.cfg.MODEL.RPN_ONLY:
             # When training an RPN-only model, the loss is determined by the
             # predicted objectness and rpn_box_regression values and there is
@@ -170,6 +173,7 @@ class RPNModule(torch.nn.Module):
         else:
             # For end-to-end models, anchors must be transformed into boxes and
             # sampled into a training batch.
+            # 对每张img筛选预测框,最后和targets的内容拼起来
             with torch.no_grad():
                 boxes = self.box_selector_train(
                     anchors, objectness, rpn_box_regression, targets

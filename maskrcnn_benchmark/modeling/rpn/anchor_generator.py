@@ -62,7 +62,7 @@ class AnchorGenerator(nn.Module):
                     aspect_ratios
                 ).float()
                 for anchor_stride, size in zip(anchor_strides, sizes)
-            ]
+            ]  # 5个特征层的不同比例的x1y1x2y2
         self.strides = anchor_strides
         self.cell_anchors = BufferList(cell_anchors)
         self.straddle_thresh = straddle_thresh
@@ -87,12 +87,12 @@ class AnchorGenerator(nn.Module):
             shift_x = shift_x.reshape(-1)
             shift_y = shift_y.reshape(-1)
             shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=1)
-
+            # shifts 4列, 表示base_anchors的x1y1x2y2的偏移量, 加起来就是anchor偏移后的位置
             anchors.append(
                 (shifts.view(-1, 1, 4) + base_anchors.view(1, -1, 4)).reshape(-1, 4)
             )
 
-        return anchors
+        return anchors    # (不同偏移组合 x 不同ratio) 个anchor的位置
 
     def add_visibility_to(self, boxlist):
         image_width, image_height = boxlist.size
@@ -111,17 +111,17 @@ class AnchorGenerator(nn.Module):
 
     def forward(self, image_list, feature_maps):
         grid_sizes = [feature_map.shape[-2:] for feature_map in feature_maps]
-        anchors_over_all_feature_maps = self.grid_anchors(grid_sizes)
+        anchors_over_all_feature_maps = self.grid_anchors(grid_sizes)   # 所有特征层(不同偏移组合 x 不同ratio) 个anchor的位置
         anchors = []
         for i, (image_height, image_width) in enumerate(image_list.image_sizes):
             anchors_in_image = []
             for anchors_per_feature_map in anchors_over_all_feature_maps:
                 boxlist = BoxList(
                     anchors_per_feature_map, (image_width, image_height), mode="xyxy"
-                )
+                )       # boxlist存着对应特征层的anchors和图片size
                 self.add_visibility_to(boxlist)
-                anchors_in_image.append(boxlist)
-            anchors.append(anchors_in_image)
+                anchors_in_image.append(boxlist)    # 一张图片里5个特征层的boxlist
+            anchors.append(anchors_in_image)   # batch个图片, 不同img的size不一样
         return anchors
 
 
@@ -226,7 +226,7 @@ def generate_anchors(
     """
     return _generate_anchors(
         stride,
-        np.array(sizes, dtype=np.float) / stride,
+        np.array(sizes, dtype=np.float) / stride, # 导致scale都是8
         np.array(aspect_ratios, dtype=np.float),
     )
 
@@ -235,11 +235,11 @@ def _generate_anchors(base_size, scales, aspect_ratios):
     """Generate anchor (reference) windows by enumerating aspect ratios X
     scales wrt a reference (0, 0, base_size - 1, base_size - 1) window.
     """
-    anchor = np.array([1, 1, base_size, base_size], dtype=np.float) - 1
-    anchors = _ratio_enum(anchor, aspect_ratios)
+    anchor = np.array([1, 1, base_size, base_size], dtype=np.float) - 1  # 得到基本anchor
+    anchors = _ratio_enum(anchor, aspect_ratios)   # 得到不同比例的anchors
     anchors = np.vstack(
         [_scale_enum(anchors[i, :], scales) for i in range(anchors.shape[0])]
-    )
+    )       # 把anchors都扩大scale倍
     return torch.from_numpy(anchors)
 
 
@@ -270,8 +270,13 @@ def _mkanchors(ws, hs, x_ctr, y_ctr):
 
 
 def _ratio_enum(anchor, ratios):
-    """Enumerate a set of anchors for each aspect ratio wrt an anchor."""
-    w, h, x_ctr, y_ctr = _whctrs(anchor)
+    """Enumerate a set of anchors for each aspect ratio wrt an anchor.
+    给定一个anchor,根据ratios产生3个anchors（宽 ws 高 hs）, 原理是保持这些anchors的面积一样, 中心点不变
+    ws x hs = w x h
+    h/w = ratio
+    求解得到ws hs , 通过中心点得到anchors
+    """
+    w, h, x_ctr, y_ctr = _whctrs(anchor)   # 宽 高 （都加了1） 以及 中心点
     size = w * h
     size_ratios = size / ratios
     ws = np.round(np.sqrt(size_ratios))
@@ -281,7 +286,9 @@ def _ratio_enum(anchor, ratios):
 
 
 def _scale_enum(anchor, scales):
-    """Enumerate a set of anchors for each scale wrt an anchor."""
+    """Enumerate a set of anchors for each scale wrt an anchor.
+    w和h都扩大了scale倍
+    """
     w, h, x_ctr, y_ctr = _whctrs(anchor)
     ws = w * scales
     hs = h * scales

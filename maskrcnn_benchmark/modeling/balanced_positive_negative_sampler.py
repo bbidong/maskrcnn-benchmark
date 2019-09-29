@@ -10,7 +10,7 @@ class BalancedPositiveNegativeSampler(object):
     def __init__(self, batch_size_per_image, positive_fraction):
         """
         Arguments:
-            batch_size_per_image (int): number of elements to be selected per image
+            batch_size_per_image (int): number of elements to be selected per image(positive+negative)
             positive_fraction (float): percentage of positive elements per batch
         """
         self.batch_size_per_image = batch_size_per_image
@@ -35,7 +35,7 @@ class BalancedPositiveNegativeSampler(object):
         pos_idx = []
         neg_idx = []
         for matched_idxs_per_image in matched_idxs:
-            positive = torch.nonzero(matched_idxs_per_image >= 1).squeeze(1)
+            positive = torch.nonzero(matched_idxs_per_image >= 1).squeeze(1)   #返回的是positive的索引
             negative = torch.nonzero(matched_idxs_per_image == 0).squeeze(1)
 
             num_pos = int(self.batch_size_per_image * self.positive_fraction)

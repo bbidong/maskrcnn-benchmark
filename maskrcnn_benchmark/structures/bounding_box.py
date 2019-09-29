@@ -8,6 +8,10 @@ FLIP_TOP_BOTTOM = 1
 
 class BoxList(object):
     """
+    bbox：N*4,anchor的坐标
+    size：img尺寸
+    mode：xyxy or xywh
+    extra_fields: 一般存objectness(分类的score)
     This class represents a set of bounding boxes.
     The bounding boxes are represented as a Nx4 Tensor.
     In order to uniquely determine the bounding boxes with respect
@@ -213,7 +217,7 @@ class BoxList(object):
 
     def clip_to_image(self, remove_empty=True):
         TO_REMOVE = 1
-        self.bbox[:, 0].clamp_(min=0, max=self.size[0] - TO_REMOVE)
+        self.bbox[:, 0].clamp_(min=0, max=self.size[0] - TO_REMOVE)   # 假如size是100,则min=0,max=99
         self.bbox[:, 1].clamp_(min=0, max=self.size[1] - TO_REMOVE)
         self.bbox[:, 2].clamp_(min=0, max=self.size[0] - TO_REMOVE)
         self.bbox[:, 3].clamp_(min=0, max=self.size[1] - TO_REMOVE)
