@@ -25,6 +25,10 @@ class Compose(object):
 
 
 class Resize(object):
+    """
+    设min_size=800，max_size=1333. 对原图尺寸w、h按比例resize,设h<w,则把短的一边h扩张到800，w按w:h比例扩张，如果w扩张后大于1333，便减小
+    min_size，重新扩张，把短的一边扩张到min_size
+    """
     def __init__(self, min_size, max_size):
         if not isinstance(min_size, (list, tuple)):
             min_size = (min_size,)
