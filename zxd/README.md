@@ -4,8 +4,11 @@ cuda 9
 python 3.6  
 torch 1.0.0  
 torchvision 0.2.0  
-# 解析
+# 参考
 https://www.cnblogs.com/wangyong/p/10614898.html
+# 代码
+# 数据
+利用torchvision.datasets.coco.CocoDetection类读取coco数据，target的box一开始是(x,y,w,h)格式，后通过BoxList类转为（xyxy）,以像素值而非百分比的格式输入模型
 ## backbone结构
 ![](fig/backbone.jpg)
 ## rpn结构（还没整理完）
