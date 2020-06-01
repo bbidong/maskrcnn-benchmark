@@ -6,8 +6,7 @@ torch 1.0.0
 torchvision 0.2.0 
 ## Error
 1. apex安装出现 `error: expected primary-expression before 'some' token`
-
-  办法：恢复到apex的早期版本
+  - 办法：恢复到apex的早期版本
   ```sh
   git checkout f3a960f80244cf9e80558ab30f7f7e8cbf03c0a0
   ```
