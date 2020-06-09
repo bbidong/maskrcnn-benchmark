@@ -6,16 +6,18 @@ torch 1.0.0
 torchvision 0.2.0 
 ## Error
 1. cocoapi安装出现`fatal error: Python.h: No such file or directory`
-    - 当前python没有安装完全，执行
+    - 当前python版本没有安装完全，执行
     ```sh
     sudo apt-get install python3-dev
     ```
     如果报错，那么就换一个python版本建虚拟环境吧，比如3.6或3.7
+    
 2. apex安装出现 `error: expected primary-expression before 'some' token`
     - 恢复到apex的早期版本
     ```sh
     git checkout f3a960f80244cf9e80558ab30f7f7e8cbf03c0a0
     ```
+    
 3. `cannot import name '_C' from 'maskrcnn_benchmark`
     - 主目录下的setup.py没有编译成功，重新编译
     ```python
