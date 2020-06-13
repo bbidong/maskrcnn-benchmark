@@ -34,6 +34,7 @@ cfg的参数由`config/defaults.py`和`--config-file`传入的yaml文件决定
   设w,h为原img大小，max,min为设定的期望大小，目的是把w,h保持比例进行resize。先看看以min为基准resize后最大值是否>max，如果超过了max,就对min进行调整（减小），然后再以min为基准进行resize，完毕。
 ## backbone结构
 ResNet50-C4 : layer3的输出
+
 ResNet50-C5 : layer4的输出
 ![](fig/backbone.jpg)
 ## rpn结构（还没整理完）
