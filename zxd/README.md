@@ -23,6 +23,9 @@ torchvision 0.2.0
     ```python
     python setup.py build develop
     ```
+    
+4. `RuntimeError: _th_or not supported on CUDAType for Bool`
+    - Just replace all `torch.bool` with `torch.uint8` in file `modeling/balanced_positive_negative_sampler.py` and file `structures/segmentation_mask.py`
 # 参考
 https://www.cnblogs.com/wangyong/p/10614898.html
 # 代码
