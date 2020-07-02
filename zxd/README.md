@@ -42,7 +42,7 @@ C2-C5的bloc个数分别为3，4，6，3，C2-C5尺寸是否减半由它们的�
 
 FPN的上采样通过线性插值实现
 
-![](fig/resnet.PNG)![](fig/fpn.png)
-![](fig/backbone.jpg)
+![](fig/resnet.PNG)
+![](fig/backbone.jpg)![](fig/fpn.png)
 ## rpn结构（还没整理完）
 ![](fig/rpn.jpg)
