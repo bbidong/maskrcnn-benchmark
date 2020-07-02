@@ -40,6 +40,7 @@ layer1-4对应resnet50 C2-C5
 
 C2-C5的bloc个数分别为3，4，6，3，C2-C5尺寸是否减半由它们的第一个block的第一个conv的stride（分别为1，2，2，2）决定，其他的所有的stride都为1，因此，C2尺寸保持不变，C3-C5减半
 
+![](fig/resnet.PNG)![](fig/fpn.png)
 ![](fig/backbone.jpg)
 ## rpn结构（还没整理完）
 ![](fig/rpn.jpg)
