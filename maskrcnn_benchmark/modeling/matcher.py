@@ -68,21 +68,22 @@ class Matcher(object):
             all_matches = matches.clone()   # shape of all_matches=[N],取值x(0到M-1之间),表示这个预测框与第x个gt的IOU最大
 
         # Assign candidate matches with low quality to negative (unassigned) values
-        below_low_threshold = matched_vals < self.low_threshold
+        below_low_threshold = matched_vals < self.low_threshold     # 负样本
         between_thresholds = (matched_vals >= self.low_threshold) & (
             matched_vals < self.high_threshold
-        )
+        )   # 无关样本
         matches[below_low_threshold] = Matcher.BELOW_LOW_THRESHOLD
         matches[between_thresholds] = Matcher.BETWEEN_THRESHOLDS
         # 到此, shape of matches=[N], 取值可以为-1(表示这个预测框与所有gt的最大IOU<low_threshold),-2(同理),以及x(0到M-1)（表示这个预测框与第x个gt的IOU最大且>high_threshold）
-        if self.allow_low_quality_matches:
+        if self.allow_low_quality_matches:  # True则应用 正样本选取规则(1)
             self.set_low_quality_matches_(matches, all_matches, match_quality_matrix)
 
         return matches
 
     def set_low_quality_matches_(self, matches, all_matches, match_quality_matrix):
         """
-        功能：在本来的matches里,如果预测框与所有gt的最大IOU<high_threshold,就会被当成背景,
+        正样本选取规则(1)
+        功能：在本来的matches里,如果预测框与所有gt的最大IOU<high_threshold,就会被当成背景(负样本或无关样本),
         这个函数允许小于low_threshold的预测框与相应的基准边框gt相匹配. 明确的说,对于每一个gt,
         找到IOU最大的预测框（可能多个）,如果这些预测框中有的被屏蔽了, 就把它们和IOU最大的gt匹配上,
         尽管IOU<high_threshold.
@@ -110,7 +111,7 @@ class Matcher(object):
         #           [    5, 45325],
         #           [    5, 46390]])
         # Each row is a (gt index, prediction index)
-        # Note how gt items 1, 2, 3, and 5 each have two ties
+        # Note how gt items 1, 2, 3, and 5 each have two ties 一个gt有多个最大IOU的预测框
 
         pred_inds_to_update = gt_pred_pairs_of_highest_quality[:, 1]
         matches[pred_inds_to_update] = all_matches[pred_inds_to_update]

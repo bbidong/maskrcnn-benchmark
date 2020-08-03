@@ -21,13 +21,13 @@ class BoxCoder(object):
 
     def encode(self, reference_boxes, proposals):
         """
-        功能：得到衡量尺度t_x,t_y,t_w,t_h
+        功能：得到target衡量尺度t_x,t_y,t_w,t_h
         Encode a set of proposals with respect to some
         reference boxes
 
         Arguments:
-            reference_boxes (Tensor): reference boxes   , 每个预测框对应的基准框
-            proposals (Tensor): boxes to be encoded     ,   预测框
+            reference_boxes (Tensor): reference boxes   , 每个anchor对应gt_boxes的x1x2y1y2
+            proposals (Tensor): boxes to be encoded     ,   anchor的x1x2y1y2
         """
 
         TO_REMOVE = 1  # TODO remove
@@ -52,13 +52,13 @@ class BoxCoder(object):
 
     def decode(self, rel_codes, boxes):
         """
-        功能： 根据anchor和学习到的映射函数得到预测框
+        功能： 根据anchor和学习到的映射函数得到建议框
         From a set of original boxes and encoded relative box offsets,
         get the decoded boxes.
 
         Arguments:
-            rel_codes (Tensor): encoded boxes     box_regression
-            boxes (Tensor): reference boxes.      anchor
+            rel_codes (Tensor): encoded boxes     回归 box_regression
+            boxes (Tensor): reference boxes.      先验框 anchor
         """
 
         boxes = boxes.to(rel_codes.dtype)

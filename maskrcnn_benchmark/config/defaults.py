@@ -98,7 +98,7 @@ _C.MODEL.BACKBONE = CN()
 _C.MODEL.BACKBONE.CONV_BODY = "R-50-C4"
 
 # Add StopGrad at a specified stage so the bottom layers are frozen
-_C.MODEL.BACKBONE.FREEZE_CONV_BODY_AT = 2
+_C.MODEL.BACKBONE.FREEZE_CONV_BODY_AT = 2  # 冻结一部分结构的权重
 
 
 # ---------------------------------------------------------------------------- #
@@ -139,15 +139,15 @@ _C.MODEL.RPN.STRADDLE_THRESH = 0
 # Minimum overlap required between an anchor and ground-truth box for the
 # (anchor, gt box) pair to be a positive example (IoU >= FG_IOU_THRESHOLD
 # ==> positive RPN example)
-_C.MODEL.RPN.FG_IOU_THRESHOLD = 0.7
+_C.MODEL.RPN.FG_IOU_THRESHOLD = 0.7  # RPN选取样本的阈值
 # Maximum overlap allowed between an anchor and ground-truth box for the
 # (anchor, gt box) pair to be a negative examples (IoU < BG_IOU_THRESHOLD
 # ==> negative RPN example)
 _C.MODEL.RPN.BG_IOU_THRESHOLD = 0.3
 # Total number of RPN examples per image
-_C.MODEL.RPN.BATCH_SIZE_PER_IMAGE = 256
+_C.MODEL.RPN.BATCH_SIZE_PER_IMAGE = 256  # 选取样本总数
 # Target fraction of foreground (positive) examples per RPN minibatch
-_C.MODEL.RPN.POSITIVE_FRACTION = 0.5
+_C.MODEL.RPN.POSITIVE_FRACTION = 0.5   # 正样本比例
 # Number of top scoring RPN proposals to keep before applying NMS
 # When FPN is used, this is *per FPN level* (not total)
 _C.MODEL.RPN.PRE_NMS_TOP_N_TRAIN = 12000
@@ -166,7 +166,7 @@ _C.MODEL.RPN.FPN_POST_NMS_TOP_N_TRAIN = 2000
 _C.MODEL.RPN.FPN_POST_NMS_TOP_N_TEST = 2000
 # Apply the post NMS per batch (default) or per image during training
 # (default is True to be consistent with Detectron, see Issue #672)
-_C.MODEL.RPN.FPN_POST_NMS_PER_BATCH = True
+_C.MODEL.RPN.FPN_POST_NMS_PER_BATCH = True   # 如果为True,表示一个batch筛选FPN_POST_NMS_TOP_N_TRAIN个建议框, 若为False, 表示一张图筛选这么些个
 # Custom rpn head, empty to use default conv or separable conv
 _C.MODEL.RPN.RPN_HEAD = "SingleConvRPNHead"
 
@@ -177,7 +177,7 @@ _C.MODEL.RPN.RPN_HEAD = "SingleConvRPNHead"
 _C.MODEL.ROI_HEADS = CN()
 _C.MODEL.ROI_HEADS.USE_FPN = False
 # Overlap threshold for an RoI to be considered foreground (if >= FG_IOU_THRESHOLD)
-_C.MODEL.ROI_HEADS.FG_IOU_THRESHOLD = 0.5
+_C.MODEL.ROI_HEADS.FG_IOU_THRESHOLD = 0.5  # 选取样本的阈值
 # Overlap threshold for an RoI to be considered background
 # (class = 0 if overlap in [0, BG_IOU_THRESHOLD))
 _C.MODEL.ROI_HEADS.BG_IOU_THRESHOLD = 0.5
@@ -188,9 +188,9 @@ _C.MODEL.ROI_HEADS.BBOX_REG_WEIGHTS = (10., 10., 5., 5.)
 # Total number of RoIs per training minibatch =
 #   TRAIN.BATCH_SIZE_PER_IM * TRAIN.IMS_PER_BATCH
 # E.g., a common configuration is: 512 * 2 * 8 = 8192
-_C.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512
+_C.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512  # 选取样本总数
 # Target fraction of RoI minibatch that is labeled foreground (i.e. class > 0)
-_C.MODEL.ROI_HEADS.POSITIVE_FRACTION = 0.25
+_C.MODEL.ROI_HEADS.POSITIVE_FRACTION = 0.25  # 正样本比例
 
 # Only used on test mode
 
@@ -406,7 +406,8 @@ _C.SOLVER.WARMUP_FACTOR = 1.0 / 3
 _C.SOLVER.WARMUP_ITERS = 500
 _C.SOLVER.WARMUP_METHOD = "linear"
 
-_C.SOLVER.CHECKPOINT_PERIOD = 2500
+_C.SOLVER.CHECKPOINT_PERIOD = 2500   # 隔多少step保存一次模型
+_C.SOLVER.TEST_PERIOD=0
 
 # Number of images per batch
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will
@@ -451,7 +452,7 @@ _C.TEST.BBOX_AUG.SCALE_H_FLIP = False
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
-_C.OUTPUT_DIR = "."
+_C.OUTPUT_DIR = "result"     # 放训好的模型
 
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")
 

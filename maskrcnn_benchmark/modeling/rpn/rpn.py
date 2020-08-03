@@ -173,7 +173,7 @@ class RPNModule(torch.nn.Module):
         else:
             # For end-to-end models, anchors must be transformed into boxes and
             # sampled into a training batch.
-            # 对每张img筛选预测框,最后和targets的内容拼起来
+            # 对每张img筛选fpn_post_nms_top_n个预测框,最后和targets的内容拼起来
             with torch.no_grad():
                 boxes = self.box_selector_train(
                     anchors, objectness, rpn_box_regression, targets

@@ -88,7 +88,7 @@ class RPNPostProcessor(torch.nn.Module):
 
         # put in the same format as anchors
         objectness = permute_and_flatten(objectness, N, A, 1, H, W).view(N, -1)
-        objectness = objectness.sigmoid()  # 归一化. 便于nms和thresh比较
+        objectness = objectness.sigmoid()  # 归一化到0-1. 取top前2000
 
         box_regression = permute_and_flatten(box_regression, N, A, 4, H, W)
 
@@ -103,7 +103,7 @@ class RPNPostProcessor(torch.nn.Module):
         image_shapes = [box.size for box in anchors]
         concat_anchors = torch.cat([a.bbox for a in anchors], dim=0)
         concat_anchors = concat_anchors.reshape(N, -1, 4)[batch_idx, topk_idx]
-        # 得到预测的候选框, 通过anchor和box_regression（学习映射函数dx dy dw dh）计算得到基于候选框的预测框
+        # 得到预测的候选框, 通过anchor和box_regression（学习映射函数dx dy dw dh）计算得到建议框
         proposals = self.box_coder.decode(
             box_regression.view(-1, 4), concat_anchors.view(-1, 4)
         )
@@ -127,7 +127,7 @@ class RPNPostProcessor(torch.nn.Module):
 
     def forward(self, anchors, objectness, box_regression, targets=None):
         """
-        功能：筛选预测框,最后和targets的内容拼起来
+        功能：筛选fpn_post_nms_top_n个预测框,最后和targets的内容拼起来
         Arguments:
             anchors: list[list[BoxList]]
             objectness: list[tensor]

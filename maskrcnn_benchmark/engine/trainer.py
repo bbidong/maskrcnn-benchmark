@@ -68,6 +68,14 @@ def do_train(
         images = images.to(device)
         targets = [target.to(device) for target in targets]
 
+        # 用torchvision的fasterrcnn, 把boxlist转为list
+        # labels=[]
+        # for i in range(len(images.tensors)):
+        #     d = {}
+        #     d['boxes'] = targets[i].bbox.cuda() # xyxy
+        #     d['labels'] = targets[i].extra_fields['labels'].cuda()
+        #     labels.append(d)
+
         loss_dict = model(images, targets)
 
         losses = sum(loss for loss in loss_dict.values())

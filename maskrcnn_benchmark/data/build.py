@@ -42,7 +42,7 @@ def build_dataset(dataset_list, transforms, dataset_catalog, is_train=True):
             args["use_difficult"] = not is_train
         args["transforms"] = transforms
         # make dataset from factory
-        dataset = factory(**args)
+        dataset = factory(**args)  # 创建COCODataset实例
         datasets.append(dataset)
 
     # for testing, return a list of datasets
@@ -172,7 +172,7 @@ def make_data_loader(cfg, is_train=True, is_distributed=False, start_iter=0):
             dataset,
             num_workers=num_workers,
             batch_sampler=batch_sampler,
-            collate_fn=collator,
+            collate_fn=collator,    # 对dataset[i]做后续处理, 把img转化成ImageList格式
         )
         data_loaders.append(data_loader)
     if is_train:

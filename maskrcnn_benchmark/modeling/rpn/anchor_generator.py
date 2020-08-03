@@ -62,7 +62,7 @@ class AnchorGenerator(nn.Module):
                     aspect_ratios
                 ).float()
                 for anchor_stride, size in zip(anchor_strides, sizes)
-            ]  # 5个特征层的不同比例的x1y1x2y2
+            ]  # 5个特征层的不同ratio(3种), scale(1种)的anchor的x1y1x2y2
         self.strides = anchor_strides
         self.cell_anchors = BufferList(cell_anchors)
         self.straddle_thresh = straddle_thresh
@@ -98,6 +98,7 @@ class AnchorGenerator(nn.Module):
         image_width, image_height = boxlist.size
         anchors = boxlist.bbox
         if self.straddle_thresh >= 0:
+            #  anchor超出img范围则为0
             inds_inside = (
                 (anchors[..., 0] >= -self.straddle_thresh)
                 & (anchors[..., 1] >= -self.straddle_thresh)

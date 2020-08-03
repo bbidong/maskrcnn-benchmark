@@ -104,7 +104,7 @@ class Pooler(nn.Module):
         levels = self.map_levels(boxes)
 
         num_rois = len(rois)
-        num_channels = x[0].shape[1]
+        num_channels = x[0].shape[1]  # FPN各层的channel都一样
         output_size = self.output_size[0]
 
         dtype, device = x[0].dtype, x[0].device

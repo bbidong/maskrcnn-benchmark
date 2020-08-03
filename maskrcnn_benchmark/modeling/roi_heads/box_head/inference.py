@@ -118,7 +118,7 @@ class PostProcessor(nn.Module):
         result = []
         # Apply threshold on detection probabilities and apply NMS
         # Skip j = 0, because it's the background class
-        inds_all = scores > self.score_thresh
+        inds_all = scores > 0.01 #self.score_thresh
         for j in range(1, num_classes):
             inds = inds_all[:, j].nonzero().squeeze(1)
             scores_j = scores[inds, j]

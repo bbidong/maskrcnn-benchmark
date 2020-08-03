@@ -106,6 +106,9 @@ def inference(
 
     if output_folder:
         torch.save(predictions, os.path.join(output_folder, "predictions.pth"))
+        # predictions=torch.load(os.path.join(output_folder, "predictions.pth"))
+        # result=torch.load(os.path.join(output_folder, "coco_results.pth"))
+
 
     extra_args = dict(
         box_only=box_only,

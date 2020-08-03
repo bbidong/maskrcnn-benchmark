@@ -11,6 +11,7 @@ from maskrcnn_benchmark.structures.image_list import to_image_list
 from ..backbone import build_backbone
 from ..rpn.rpn import build_rpn
 from ..roi_heads.roi_heads import build_roi_heads
+from torchvision.models.detection import FasterRCNN
 
 
 class GeneralizedRCNN(nn.Module):
@@ -29,6 +30,8 @@ class GeneralizedRCNN(nn.Module):
         self.backbone = build_backbone(cfg)
         self.rpn = build_rpn(cfg, self.backbone.out_channels)
         self.roi_heads = build_roi_heads(cfg, self.backbone.out_channels)
+
+        # self.detection_model=FasterRCNN(backbone,num_classes=81)
 
     def forward(self, images, targets=None):
         """
@@ -62,4 +65,5 @@ class GeneralizedRCNN(nn.Module):
             losses.update(proposal_losses)
             return losses
 
+        # result=self.detection_model(images, targets)
         return result

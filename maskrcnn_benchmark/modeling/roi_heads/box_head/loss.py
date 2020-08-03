@@ -112,7 +112,7 @@ class FastRCNNLossComputation(object):
             proposals_per_image = proposals[img_idx][img_sampled_inds]
             proposals[img_idx] = proposals_per_image
 
-        self._proposals = proposals
+        self._proposals = proposals  # 根据index从proposals, labels, regression_targets中选出的512个对应的值
         return proposals
 
     def __call__(self, class_logits, box_regression):
@@ -148,11 +148,12 @@ class FastRCNNLossComputation(object):
         # get indices that correspond to the regression targets for
         # the corresponding ground truth labels, to be used with
         # advanced indexing
-        sampled_pos_inds_subset = torch.nonzero(labels > 0).squeeze(1)
-        labels_pos = labels[sampled_pos_inds_subset]
+        sampled_pos_inds_subset = torch.nonzero(labels > 0).squeeze(1)   # 正样本的index
+        labels_pos = labels[sampled_pos_inds_subset]   # 正样本的label
         if self.cls_agnostic_bbox_reg:
             map_inds = torch.tensor([4, 5, 6, 7], device=device)
         else:
+            # 已知正样本label,从324(81x4)中选出对应label的regression
             map_inds = 4 * labels_pos[:, None] + torch.tensor(
                 [0, 1, 2, 3], device=device)
 

@@ -49,24 +49,24 @@ class RPNLossComputation(object):
         # NB: need to clamp the indices because we can have a single
         # GT in the image, and matched_idxs can be -2, which goes
         # out of bounds
-        # 得到所有预测框各自对应的基准框，将背景边框等无对应边框的预测框统统映射到第一个基准框
+        # 得到所有anchor对应的gt_boxes，将负样本和无关样本的anchor对应到第一个gt_boxes
         matched_targets = target[matched_idxs.clamp(min=0)]
         matched_targets.add_field("matched_idxs", matched_idxs)
         return matched_targets
 
     def prepare_targets(self, anchors, targets):
         """
-        功能：根据IOU的高低为每个预测框匹配一个基准框,得到return
+        功能：根据IOU的高低为每个anchor匹配一个基准框,得到return
         :param anchors: batch个img的预测框
         :param targets: batch个img的label
         :return:
-            labels：每个预测框是否有对应基准框,有为1,其他情况为0或-1
-            regression_targets：通过基准框和预测框得到的衡量尺度t_x,t_y,t_w,t_h
+            labels：shape=num(anchor),取值为1(正样本),0(负样本), -1(无关样本和尺寸超过img边缘的anchor)
+            regression_targets：通过基准框和anchor得到的衡量尺度t_x,t_y,t_w,t_h
         """
         labels = []
         regression_targets = []
         for anchors_per_image, targets_per_image in zip(anchors, targets):
-            # matched_targets：每个预测框对应的基准框（无对应边框的预测框统统映射到第一个基准框）
+            # matched_targets：每个anchor对应的基准框（非正样本的anchor统统对应到第一个基准框）
             matched_targets = self.match_targets_to_anchors(
                 anchors_per_image, targets_per_image, self.copied_fields
             )
@@ -76,7 +76,7 @@ class RPNLossComputation(object):
             labels_per_image = labels_per_image.to(dtype=torch.float32)
 
             # Background (negative examples)
-            bg_indices = matched_idxs == Matcher.BELOW_LOW_THRESHOLD
+            bg_indices = matched_idxs == Matcher.BELOW_LOW_THRESHOLD  # value=1的为负样本
             labels_per_image[bg_indices] = 0
 
             # discard anchors that go out of the boundaries of the image
@@ -114,12 +114,12 @@ class RPNLossComputation(object):
         """
         anchors = [cat_boxlist(anchors_per_image) for anchors_per_image in anchors]
         labels, regression_targets = self.prepare_targets(anchors, targets)
-        sampled_pos_inds, sampled_neg_inds = self.fg_bg_sampler(labels)  # binary masks for each image
+        sampled_pos_inds, sampled_neg_inds = self.fg_bg_sampler(labels)  # 正负样本的mask
         b=torch.cat(sampled_pos_inds, dim=0)
         a=torch.nonzero(torch.cat(sampled_pos_inds, dim=0))
         sampled_pos_inds = torch.nonzero(torch.cat(sampled_pos_inds, dim=0)).squeeze(1)
         sampled_neg_inds = torch.nonzero(torch.cat(sampled_neg_inds, dim=0)).squeeze(1)
-
+        # 所有参与训练的正负样本的index
         sampled_inds = torch.cat([sampled_pos_inds, sampled_neg_inds], dim=0)
 
         objectness, box_regression = \
@@ -131,11 +131,11 @@ class RPNLossComputation(object):
         regression_targets = torch.cat(regression_targets, dim=0)
 
         box_loss = smooth_l1_loss(
-            box_regression[sampled_pos_inds],
+            box_regression[sampled_pos_inds],    # 只有正样本
             regression_targets[sampled_pos_inds],
             beta=1.0 / 9,
             size_average=False,
-        ) / (sampled_inds.numel())
+        ) / (sampled_inds.numel())    # 相除的是正负样本之和
 
         objectness_loss = F.binary_cross_entropy_with_logits(
             objectness[sampled_inds], labels[sampled_inds]   # 看作2分类问题, label只有0和1

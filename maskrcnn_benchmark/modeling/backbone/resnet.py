@@ -232,7 +232,7 @@ def _make_stage(
                 dcn_config=dcn_config
             )
         )
-        stride = 1
+        stride = 1   # 除了第一个block其他都为1
         in_channels = out_channels
     return nn.Sequential(*blocks)
 
