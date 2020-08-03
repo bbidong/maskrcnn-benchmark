@@ -35,14 +35,3 @@ cfg的参数由`config/defaults.py`和`--config-file`传入的yaml文件决定
 - 数据增强的resize
 
   设w,h为原img大小，max,min为设定的期望大小，目的是把w,h保持比例进行resize。先看看以min为基准resize后最大值是否>max，如果超过了max,就对min进行调整（减小），然后再以min为基准进行resize，完毕。
-## backbone结构
-layer1-4对应resnet50 C2-C5
-
-C2-C5的bloc个数分别为3，4，6，3，C2-C5尺寸是否减半由它们的第一个block的第一个conv的stride（分别为1，2，2，2）决定，其他的所有的stride都为1，因此，C2尺寸保持不变，C3-C5减半
-
-FPN的上采样通过线性插值实现
-
-![](fig/resnet.PNG)
-![](fig/backbone.jpg)![](fig/fpn.png)
-## rpn结构（还没整理完）
-![](fig/rpn.jpg)
