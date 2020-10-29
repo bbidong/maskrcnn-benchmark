@@ -28,6 +28,10 @@ torchvision 0.2.0
     - Just replace all `torch.bool` with `torch.uint8` in file `modeling/balanced_positive_negative_sampler.py` and file `structures/segmentation_mask.py`
 # 参考
 https://www.cnblogs.com/wangyong/p/10614898.html
+
+简书： https://www.jianshu.com/p/ccf8affcdb98
+
+硕士毕业论文
 # 代码
 cfg的参数由`config/defaults.py`和`--config-file`传入的yaml文件决定
 ## 数据
